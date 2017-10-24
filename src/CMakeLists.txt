@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1)
 project(DepthMatch)
 
 set(HEADER_FILES
@@ -13,7 +13,7 @@ set(SOURCE_FILES
     calibration.cpp
     tinyxml2.cpp
 	my_cuda_spring_force_field.cpp
-	MyCudaMechanicalObject.cpp
+	mutable_cuda_mechanical_object.cpp
 	spring_attacher.cpp
 	spring_attacher.cu
 	associator.cpp
@@ -23,7 +23,7 @@ set (CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_DIR}/applications/plugins/MyPlugin")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_DIR}/applications/plugins/MyPlugin")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_BUILD_DIR}/cmake")
+#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_BUILD_DIR}/cmake")
 
 find_package(Threads REQUIRED)
 find_package(CUDA REQUIRED)
@@ -56,8 +56,7 @@ include_directories(SYSTEM "${SOFA_DIR}/extlibs/eigen-3.2.7")
 include_directories(SYSTEM "${SOFA_DIR}/modules")
 
 include_directories(SYSTEM "${SOFA_BUILD_DIR}/include")
-include_directories(SYSTEM "${SOFA_BUILD_DIR}/install/include")
-
+include_directories(SYSTEM "${SOFA_BUILD_DIR}/install/include") 
 cuda_add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} OPTIONS ${VERBOSE_PTXAS})
 #set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_PLUGINEXAMPLE")
 target_link_libraries(${PROJECT_NAME} SofaComponentGeneral )
@@ -67,6 +66,9 @@ target_link_libraries(${PROJECT_NAME} ${MUMPS_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} "/usr/lib/x86_64-linux-gnu/libcuda.so")
+
+add_dependencies(${PROJECT_NAME} sofa)
 
 install(TARGETS ${PROJECT_NAME}
 	COMPONENT DepthMatch_libraries

@@ -115,11 +115,11 @@ void TestComponent::setup_offscreen_rendering()
 void TestComponent::prepare_shaders()
 {
 	glpp::VertexShader vertex_shader(
-			"/home/students/haentsch/src/sofa/applications/plugins/MyPlugin/associate.vert");
+			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.vert");
 	glpp::GeometryShader geometry_shader(
-			"/home/students/haentsch/src/sofa/applications/plugins/MyPlugin/associate.geom");
+			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.geom");
 	glpp::FragmentShader fragment_shader(
-			"/home/students/haentsch/src/sofa/applications/plugins/MyPlugin/associate.frag");
+			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.frag");
 
 	_association_program.attach_shader(vertex_shader);
 	_association_program.attach_shader(geometry_shader);

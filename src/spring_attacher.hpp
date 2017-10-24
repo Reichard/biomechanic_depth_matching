@@ -14,8 +14,6 @@
 
 #include <sofa/gpu/cuda/CudaVisualModel.h>
 
-#include "MyCudaMechanicalObject.hpp"
-
 #include "cudapp.hpp"
 
 

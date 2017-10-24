@@ -32,7 +32,7 @@
 #include "rgbd_image.hpp"
 
 #include "my_cuda_spring_force_field.hpp"
-#include "MyCudaMechanicalObject.hpp"
+#include "mutable_cuda_mechanical_object.hpp"
 #include "spring_attacher.hpp"
 
 #include "cudapp.hpp"
