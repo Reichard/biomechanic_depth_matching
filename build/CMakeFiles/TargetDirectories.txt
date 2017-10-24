@@ -1,2 +1,0 @@
-/org/share/home/students/haentsch/dev/depthmatch/build/CMakeFiles/sofa.dir
-/org/share/home/students/haentsch/dev/depthmatch/build/src/CMakeFiles/DepthMatch.dir

@@ -1,2 +1,0 @@
-/usr/bin/ar cq ../../lib/libcsparse.a  CMakeFiles/csparse.dir/csparse.c.o CMakeFiles/csparse.dir/ldl.c.o
-/usr/bin/ranlib ../../lib/libcsparse.a
