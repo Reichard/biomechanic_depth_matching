@@ -1,0 +1,2 @@
+/usr/bin/ar cq ../../lib/libSofaGTestMain.a  CMakeFiles/SofaGTestMain.dir/SofaGTestMain.cpp.o
+/usr/bin/ranlib ../../lib/libSofaGTestMain.a

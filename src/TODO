@@ -1,0 +1,23 @@
+
+	- build our own model from the liver files
+
+	- add a custom force to model
+	- add custom springs to model
+
+	- write a tool to convert stereo images to rgbd
+	- export rgbd images for faster testing
+	- export camera transforms
+
+	- render model according to live camera view
+
+DONE:
+	- Write a basic sofa plugin
+	- hook callbacks (draw/update)
+
+	- draw a custom triangle
+	- set up shaders
+
+	- find opengl model in tree
+	- draw opengl model ourselves
+	- render barycentric coordinates
+	- render vertex indices

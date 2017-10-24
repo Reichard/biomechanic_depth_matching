@@ -1,0 +1,1 @@
+cmd='/usr/bin/cmake;-DPLUGIN_MYPLUGIN=ON;-DPLUGIN_SOFACUDA=ON;-DSOFA_USE_C++11=ON;-DSOFACUDA_ARCH=sm_50;-DSOFACUDA_THRUST=ON;-DAPPLICATION_MAKERIGID=OFF;-DAPPLICATION_MODELER=OFF;-GUnix Makefiles;/org/share/home/students/haentsch/dev/depthmatch/ext/sofa'
