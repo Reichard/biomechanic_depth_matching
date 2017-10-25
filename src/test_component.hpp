@@ -31,7 +31,7 @@
 #include "stats.hpp"
 #include "rgbd_image.hpp"
 
-#include "my_cuda_spring_force_field.hpp"
+#include "mutable_cuda_spring_force_field.hpp"
 #include "mutable_cuda_mechanical_object.hpp"
 #include "spring_attacher.hpp"
 
@@ -49,7 +49,7 @@ SOFA_CLASS(TestComponent, sofa::core::objectmodel::BaseObject);
 
 	//using SpringForceField = 
 	//	sofa::component::interactionforcefield::StiffSpringForceField<vec_type>;
-	using SpringForceField = MyCudaSpringForceField;
+	using SpringForceField = MutableCudaSpringForceField;
 	using MechanicalState = 
 		sofa::component::container::MechanicalObject<vec_type>;
 	using BarycentricMapping = 
@@ -67,7 +67,6 @@ SOFA_CLASS(TestComponent, sofa::core::objectmodel::BaseObject);
  
     TestComponent ();
     virtual ~TestComponent ();
-
 	virtual void init();
 	virtual void bwdInit();
     virtual void draw(const sofa::core::visual::VisualParams *);

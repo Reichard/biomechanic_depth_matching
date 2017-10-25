@@ -8,11 +8,12 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
     init.cpp
+    depth_match.cpp
     test_component.cpp
     depth_input_component.cpp
     calibration.cpp
     tinyxml2.cpp
-	my_cuda_spring_force_field.cpp
+	mutable_cuda_spring_force_field.cpp
 	mutable_cuda_mechanical_object.cpp
 	spring_attacher.cpp
 	spring_attacher.cu
@@ -54,6 +55,9 @@ include_directories(SYSTEM "${SOFA_DIR}/applications/plugins/SofaCUDA")
 include_directories(SYSTEM "${SOFA_DIR}/framework")
 include_directories(SYSTEM "${SOFA_DIR}/extlibs/eigen-3.2.7")
 include_directories(SYSTEM "${SOFA_DIR}/modules")
+include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/ext/tinyxml")
+include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/ext/glpp")
+include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/ext/cudapp")
 
 include_directories(SYSTEM "${SOFA_BUILD_DIR}/include")
 include_directories(SYSTEM "${SOFA_BUILD_DIR}/install/include") 

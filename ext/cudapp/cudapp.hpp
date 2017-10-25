@@ -12,7 +12,6 @@
                                       std::cout << str << ": " << cerr << "\n";\
                                       assert(false);\
                                     }
-
 namespace cudapp {
 
 	class Result

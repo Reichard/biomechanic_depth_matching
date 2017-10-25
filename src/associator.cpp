@@ -119,3 +119,11 @@ void Associator::update(const mediassist::Pose &pose)
 	timer.print(".done");
 }
 
+
+Association Associator::update(const mediassist::Pose &pose, const mediassist::rgbd_image &image)
+{
+	Association association;
+	return association;
+}
+
+

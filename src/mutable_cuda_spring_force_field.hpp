@@ -2,11 +2,11 @@
 
 #include <sofa/gpu/cuda/CudaSpringForceField.h>
 
-class MyCudaSpringForceField : 
+class MutableCudaSpringForceField : 
 	public sofa::component::interactionforcefield::StiffSpringForceField<sofa::gpu::cuda::CudaVec3fTypes>
 {
 	public:
-		SOFA_CLASS(MyCudaSpringForceField, 
+		SOFA_CLASS(MutableCudaSpringForceField, 
 				SOFA_TEMPLATE(sofa::component::interactionforcefield::StiffSpringForceField,
 					sofa::gpu::cuda::CudaVec3fTypes));
 

@@ -5,6 +5,9 @@
 #include "cudapp.hpp"
 #include "../../modules/SofaOpenglVisual/OglModel.h"
 #include "pose_source.hpp"
+#include "rgbd_image.hpp"
+#include "association.hpp"
+
 
 class Associator {
 	public:
@@ -28,6 +31,7 @@ class Associator {
 		}
 
 		void update(const mediassist::Pose &pose);
+		Association update(const mediassist::Pose &pose, const mediassist::rgbd_image &image);
 
 	private:
 		void init();

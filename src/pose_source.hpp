@@ -25,7 +25,7 @@ namespace mediassist {
 
 	class PoseSource {
 		public:
-			PoseSource(std::string path, int offset=0, bool in_meters=false ) 
+			PoseSource(std::string path="", int offset=0, bool in_meters=false ) 
 				: _path(path), _offset(offset), _frame(_offset), _in_meters(in_meters)
 			{
 			}
