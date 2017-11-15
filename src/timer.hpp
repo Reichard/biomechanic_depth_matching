@@ -39,10 +39,16 @@ class Timer
 			return {duration.count(),total_duration.count()};
 		}
 
-		void print(const std::string &title)
+		void log(const std::string &title)
 		{
 			auto times = read();
 			logging::d() << "TIMER " << title << ": " << times.first <<" (" << times.second << ")" << std::endl;
+		}
+
+		void print(const std::string &title)
+		{
+			auto times = read();
+			std::cout << "TIMER " << title << ": " << times.first <<" (" << times.second << ")" << std::endl;
 		}
 
 		double reset()

@@ -73,9 +73,6 @@ void TestComponent::setup_offscreen_rendering()
 			_width, _height);
 	_association_render_buffer.attach(GL_COLOR_ATTACHMENT0);
 
-	//_association_texture.set(_width,_height);
-	//_association_texture.attach(0);
-
 	std::array<GLenum,1> draw_buffers = {{ GL_COLOR_ATTACHMENT0 }};
 	glpp::set_draw_buffers(draw_buffers);
 
@@ -90,21 +87,8 @@ void TestComponent::setup_offscreen_rendering()
 
 	glpp::Framebuffer::default_framebuffer().bind();
 
-	//_ground_truth_sampler_uniform = _association_program.get_uniform("ground_truth");
-	//_ground_truth_sampler_uniform.upload(0);
-	
 	//connect with cuda
 	_association_resource = cudapp::GraphicsResource(_association_pixel_buffer.back());
-	//_association_array = cudapp::Array::map(_association_render_buffer);
-	//_association_resource = cudapp::GraphicsResource(_association_render_buffer);
-	//_association_resource = cudapp::GraphicsResource(_association_texture);
-
-	/*
-	_association_resource.map();
-	float *ptr;
-	_association_resource.mapped_pointer(ptr);
-	_association_resource.unmap();
-	*/
 
 	if(auto gl_error = glpp::Error::get())
 	{
@@ -135,6 +119,7 @@ void TestComponent::prepare_shaders()
 void TestComponent::associate_live_frame()
 {
 	Timer timer;
+
 
 	if(_ogl_model == nullptr) return;
 
@@ -304,7 +289,6 @@ void TestComponent::draw_data_positions()
 		}
 	});
 
-
 	glpp::enable_lighting();
 }
 
@@ -334,7 +318,6 @@ void TestComponent::draw_ground_truth_volume()
 		for(size_t i=0; i<_volume_points.size(); ++i)
 		{
 			if(std::isinf(_volume_points[i][0])) continue;
-
 			glpp::legacy::emit_vertex3(_volume_points[i].data());
 		}
 	});
@@ -383,8 +366,6 @@ void TestComponent::read_next_frame()
 	if(points_status)
 	{
 		_data_points = _data_points_read_buffer;
-		//_color_points = _color_points_read_buffer;
-		//_draw_img = _img;
 	}
 
 	if(_verify)
@@ -457,8 +438,8 @@ void TestComponent::update()
 	_liver_force_field->reinit();
 	*/
 
-	associate_live_frame();
-	//_associator.update(_pose);
+	//associate_live_frame();
+	_associator.update(_pose);
 
 	timer.print("associate");
 
@@ -486,8 +467,8 @@ void TestComponent::update()
 void TestComponent::update_springs_on_gpu()
 {
 
-	_spring_attacher.set_association_resource(_association_resource);
-	//_spring_attacher.set_association_resource(_associator.graphics_resource());
+	//_spring_attacher.set_association_resource(_association_resource);
+	_spring_attacher.set_association_resource(_associator.graphics_resource());
 	_spring_attacher.attach_springs(_data_points); 
 }
 

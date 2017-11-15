@@ -44,7 +44,7 @@ class Associator {
 		int _height;
 
 		glpp::Program _program;
-		glpp::PixelPackBuffer _association_pixel_buffer;
+		glpp::PixelPackDoubleBuffer _association_pixel_buffer;
 
 		glpp::Framebuffer _fbo;
 		glpp::Renderbuffer _depth_stencil_render_buffer;

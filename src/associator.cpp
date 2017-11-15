@@ -9,17 +9,17 @@ void Associator::init()
 	cudapp::GLContext cuda_context(device);
 
 	glpp::VertexShader vertex_shader(
-			"/home/haentsch/src/sofa/applications/plugins/MyPlugin/associate.vert");
+			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.vert");
 	glpp::GeometryShader geometry_shader(
-			"/home/haentsch/src/sofa/applications/plugins/MyPlugin/associate.geom");
+			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.geom");
 	glpp::FragmentShader fragment_shader(
-			"/home/haentsch/src/sofa/applications/plugins/MyPlugin/associate.frag");
+			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.frag");
 
 	_program.attach_shader(vertex_shader);
 	_program.attach_shader(geometry_shader);
 	_program.attach_shader(fragment_shader);
-	auto link_status = _program.link();
 
+	auto link_status = _program.link();
 	if(!link_status)
 	{
 		std::cout << link_status.info_log() << std::endl;
@@ -45,7 +45,7 @@ void Associator::init()
 
 	glpp::Framebuffer::default_framebuffer().bind();
 
-	_association_resource = cudapp::GraphicsResource(_association_pixel_buffer);
+	_association_resource = cudapp::GraphicsResource(_association_pixel_buffer.back());
 
 	initialized = true;
 }
@@ -98,7 +98,7 @@ void Associator::update(const mediassist::Pose &pose)
 
 	timer.print(".render");
 
-	_association_pixel_buffer.bind();
+	_association_pixel_buffer.back().bind();
 	glpp::read_pixels(GL_COLOR_ATTACHMENT0, 0,0,_calibration.width, _calibration.height,
 			GL_RGBA, GL_FLOAT, 0);
 
