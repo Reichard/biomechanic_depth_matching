@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(DepthMatch)
 
+set(LIBRARY_NAME ${PROJECT_NAME})
+set(EXECUTABLE_NAME run)
+
 set(HEADER_FILES
     config.h
     test_component.hpp
@@ -27,16 +30,16 @@ set(EXECUTABLE_FILES
 
 set (CMAKE_CXX_STANDARD 11)
 
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_DIR}/applications/plugins/MyPlugin")
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_DIR}/applications/plugins/MyPlugin")
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${SOFA_BUILD_DIR}/cmake")
-
 find_package(Threads REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
-#find_package(glfw REQUIRED)
-#find_package(SofaSimpleGUI REQUIRED)
+
+find_package(GLEW REQUIRED)
+if(GLEW_FOUND)
+	include_directories(${GLEW_INCLUDE_DIRS})
+	link_libraries(${GLEW_LIBRARIES})
+endif()
 
 # nvcc uses a "host code compiler" to compile CPU code, specified by CUDA_HOST_COMPILER.
 # With some versions of CMake, CUDA_HOST_COMPILER defaults to CMAKE_C_COMPILER,
@@ -45,17 +48,11 @@ if (${CUDA_HOST_COMPILER} MATCHES "ccache$")
     message(STATUS "SofaCUDA: CUDA host compiler was set to ccache, changing to g++")
     set(CUDA_HOST_COMPILER "g++" CACHE STRING "Host side compiler used by NVCC" FORCE)
 endif()
-#fix for nvcc compatibility with -fno-partial-inlining flag
-#set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
-# Give include directories to nvcc compiler.
-# Note: keep cuda_include_directories() before cuda_add_library().
 cuda_include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 cuda_include_directories("${SOFA_BUILD_DIR}/include")
 
-#set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_50,code=sm_50;)
-#set(CUDA_HOST_COMPILATION_CPP ON)
-#set(CUDA_PROPAGATE_HOST_FLAGS ON)
+add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
 include_directories(SYSTEM "${SOFA_DIR}/applications/plugins/")
 include_directories(SYSTEM "${SOFA_DIR}/applications/plugins/SofaCUDA")
@@ -87,26 +84,27 @@ target_link_libraries(${PROJECT_NAME} "/usr/lib/x86_64-linux-gnu/libcuda.so")
 
 add_dependencies(${PROJECT_NAME} sofa)
 
-add_executable(run ${EXECUTABLE_FILES})
-add_dependencies(run sofa)
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_FILES})
+add_dependencies(${EXECUTABLE_NAME} ${PROJECT_NAME})
+add_dependencies(${EXECUTABLE_NAME} sofa)
 
-target_link_libraries(run SofaCUDA )
-target_link_libraries(run SofaSimpleGUI )
-target_link_libraries(run SofaCore )
-target_link_libraries(run SofaHelper )
-target_link_libraries(run SofaSimulationCommon )
-target_link_libraries(run SofaBaseMechanics )
-target_link_libraries(run SofaBoundaryCondition )
-target_link_libraries(run SofaBaseTopology )
-target_link_libraries(run SofaBaseLinearSolver )
-target_link_libraries(run SofaBaseVisual )
-target_link_libraries(run SofaOpenglVisual )
-target_link_libraries(run SofaImplicitOdeSolver )
-target_link_libraries(run SofaSimpleFem )
+target_link_libraries(${EXECUTABLE_NAME} SofaCUDA )
+target_link_libraries(${EXECUTABLE_NAME} SofaSimpleGUI )
+target_link_libraries(${EXECUTABLE_NAME} SofaCore )
+target_link_libraries(${EXECUTABLE_NAME} SofaHelper )
+target_link_libraries(${EXECUTABLE_NAME} SofaSimulationCommon )
+target_link_libraries(${EXECUTABLE_NAME} SofaBaseMechanics )
+target_link_libraries(${EXECUTABLE_NAME} SofaBoundaryCondition )
+target_link_libraries(${EXECUTABLE_NAME} SofaBaseTopology )
+target_link_libraries(${EXECUTABLE_NAME} SofaBaseLinearSolver )
+target_link_libraries(${EXECUTABLE_NAME} SofaBaseVisual )
+target_link_libraries(${EXECUTABLE_NAME} SofaOpenglVisual )
+target_link_libraries(${EXECUTABLE_NAME} SofaImplicitOdeSolver )
+target_link_libraries(${EXECUTABLE_NAME} SofaSimpleFem )
 
-target_link_libraries(run ${OPENGL_LIBRARIES} )
-target_link_libraries(run ${GLUT_LIBRARIES} )
-target_link_libraries(run ${glfw_LIBRARIES} )
+target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES} )
+target_link_libraries(${EXECUTABLE_NAME} ${GLUT_LIBRARIES} )
+target_link_libraries(${EXECUTABLE_NAME} ${glfw_LIBRARIES} )
 
 install(TARGETS ${PROJECT_NAME}
 	COMPONENT DepthMatch_libraries

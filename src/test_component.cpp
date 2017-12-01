@@ -45,9 +45,8 @@ TestComponent::TestComponent()
 			"verify", "enable or disable verification")),
 	_calibration_path(sofa::core::objectmodel::Base::initData(&_calibration_path,
 			"calibration", "path of the camera calibration file")),
-
-	_reference_mesh("/media/haentsch/data/BioSim/pig_liver_seq2/0.stl"),
-	_pose_source("/media/haentsch/data/BioSimCamera/pig_liver_seq2/")
+	_reference_mesh(""),
+	_pose_source("")
 {
 	f_listening.setValue(true);
 }
@@ -61,8 +60,6 @@ void TestComponent::setup_offscreen_rendering()
 	std::cout << "setup offscreen rendering" << std::endl;
 	cudapp::Device device = cudapp::default_device();
 	cudapp::GLContext cuda_context(device);
-
-	prepare_shaders();
 
  	_fbo.bind();
 
@@ -94,100 +91,6 @@ void TestComponent::setup_offscreen_rendering()
 	{
 		std::cout << gl_error.to_string() << std::endl;
 	}
-}
-
-void TestComponent::prepare_shaders()
-{
-	glpp::VertexShader vertex_shader(
-			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.vert");
-	glpp::GeometryShader geometry_shader(
-			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.geom");
-	glpp::FragmentShader fragment_shader(
-			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.frag");
-
-	_association_program.attach_shader(vertex_shader);
-	_association_program.attach_shader(geometry_shader);
-	_association_program.attach_shader(fragment_shader);
-	auto link_status = _association_program.link();
-
-	if(!link_status)
-	{
-		std::cout << link_status.info_log() << std::endl;
-	}
-}
-
-void TestComponent::associate_live_frame()
-{
-	Timer timer;
-
-
-	if(_ogl_model == nullptr) return;
-
-	auto &vertices = _ogl_model->getVertices();
-	auto &normals = _ogl_model->getVnormals();
-	auto &triangles = _ogl_model->getTriangles();
-
-	auto viewport = glpp::get_viewport();
-
-	_fbo.bind();
-	glpp::set_viewport(glpp::Viewport(0,0,_width,_height));
-
-	_association_program.use();
-
-	Eigen::Matrix4f world_to_camera = _pose.transformation.inverse().matrix();
-	Eigen::Matrix4f modelview = 
-		_calibration.gl_camera_transform * 
-		Eigen::Affine3f(Eigen::Scaling(1.0f,1.0f,-1.0f)).matrix() *
-		world_to_camera;
-
-	glpp::clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, 0,0,0,-1);
-
-	auto model_view_uniform = _association_program.get_uniform("model_view_matrix");
-	auto projection_uniform = _association_program.get_uniform("projection_matrix");
-	model_view_uniform.upload(modelview);
-	projection_uniform.upload(_calibration.gl_projection_matrix);
-
-	glpp::disable_lighting();
-	glpp::disable_culling();
-	glpp::disable_stencil_test();
-	glpp::enable_depth_test();
-
-	timer.print(".prepare");
-
-	glpp::enable_client_state(GL_VERTEX_ARRAY);
-	glpp::enable_client_state(GL_NORMAL_ARRAY);
-	glpp::set_vertex_pointer(3, GL_FLOAT, 0, vertices.getData());
-	glpp::set_normal_pointer(GL_FLOAT, 0, normals.getData());
-	glpp::draw_elements(GL_TRIANGLES, triangles.size()*3, GL_UNSIGNED_INT, triangles.getData());
-	glpp::finish();
-
-	timer.print(".render");
-
-	std::fill(_association_buffer.begin(), _association_buffer.end(), 0);
-
-	_association_pixel_buffer.back().bind();
-	glpp::read_pixels(GL_COLOR_ATTACHMENT0, 0,0,_width, _height,
-			GL_RGBA, GL_FLOAT, 0);
-	//_association_pixel_buffer.front().copy(_association_buffer);
-	//_association_pixel_buffer.swap();
-	//_association_pixel_buffer.back().copy(_association_buffer);
-
-	//_association_texture.read(_association_buffer);
-	glpp::finish();
-
-	timer.print(".read pixels");
-
-	glpp::Program::use_default();
-
-	if(auto gl_error = glpp::Error::get())
-	{
-		std::cout << gl_error.to_string() << std::endl;
-	}
-
-	glpp::Framebuffer::bind_default();
-	glpp::set_viewport(viewport);
-
-	timer.print(".done");
 }
 
 void TestComponent::draw(const sofa::core::visual::VisualParams *params)
@@ -283,9 +186,8 @@ void TestComponent::draw_data_positions()
 	glpp::legacy::render_points([=]{
 		for(size_t i=0; i<_data_points.size(); i+=8)
 		{
-			if(std::isinf(_data_points[i][0])) continue;
-
-			glpp::legacy::emit_vertex3(_data_points[i].data());
+			if(!std::isinf(_data_points[i][0]))
+				glpp::legacy::emit_vertex3(_data_points[i].data());
 		}
 	});
 
@@ -300,9 +202,8 @@ void TestComponent::draw_ground_truth()
 	glpp::legacy::render_points([=]{
 		for(size_t i=0; i<_ground_truth.size(); ++i)
 		{
-			if(std::isinf(_ground_truth[i][0])) continue;
-
-			glpp::legacy::emit_vertex3(_ground_truth[i].data());
+			if(!std::isinf(_ground_truth[i][0]))
+				glpp::legacy::emit_vertex3(_ground_truth[i].data());
 		}
 	});
 
@@ -317,8 +218,8 @@ void TestComponent::draw_ground_truth_volume()
 	glpp::legacy::render_points([=]{
 		for(size_t i=0; i<_volume_points.size(); ++i)
 		{
-			if(std::isinf(_volume_points[i][0])) continue;
-			glpp::legacy::emit_vertex3(_volume_points[i].data());
+			if(!std::isinf(_volume_points[i][0]))
+				glpp::legacy::emit_vertex3(_volume_points[i].data());
 		}
 	});
 
@@ -327,14 +228,12 @@ void TestComponent::draw_ground_truth_volume()
 
 void TestComponent::read_next_frame()
 {
-	const int offset = 100;
-
 	if(_current_frame >= 0) _current_frame += 1;
 	else _current_frame = 0;
 
 	std::cout << "read data for frame " << _current_frame << std::endl;
 
-	int input_frame = _current_frame + offset;
+	int input_frame = _current_frame;
 
 	if(_current_frame > 0 && _verify)
 	{
@@ -438,7 +337,6 @@ void TestComponent::update()
 	_liver_force_field->reinit();
 	*/
 
-	//associate_live_frame();
 	_associator.update(_pose);
 
 	timer.print("associate");
@@ -450,15 +348,12 @@ void TestComponent::update()
 
 	if(_simulation_frame % simulation_substeps == simulation_substeps-1) 
 	{
+		/*
 		std::stringstream surface_str;
 		surface_str << "/media/haentsch/out/"
 			<< _current_frame << ".stl";
 		write_surface_stl(surface_str.str());
-
-		std::stringstream marker_str;
-		marker_str << "/media/haentsch/out/markers_"
-			<< _current_frame << ".stl";
-		write_marker_stl(marker_str.str());
+		*/
 	}
 
 	timer.print("update springs");
@@ -467,7 +362,6 @@ void TestComponent::update()
 void TestComponent::update_springs_on_gpu()
 {
 
-	//_spring_attacher.set_association_resource(_association_resource);
 	_spring_attacher.set_association_resource(_associator.graphics_resource());
 	_spring_attacher.attach_springs(_data_points); 
 }
@@ -623,16 +517,8 @@ void TestComponent::update_springs()
 
 void TestComponent::handleEvent(sofa::core::objectmodel::Event *event)
 {
-	using sofa::simulation::AnimateBeginEvent;
-	using sofa::simulation::AnimateEndEvent;
-
-	if(dynamic_cast<AnimateBeginEvent*>(event))
-	{
+	if(dynamic_cast<sofa::simulation::AnimateBeginEvent*>(event))
 		update();
-	}
-	else if(dynamic_cast<AnimateEndEvent*>(event))
-	{
-	}
 }
 
 void TestComponent::init()
@@ -815,18 +701,14 @@ void TestComponent::init()
 
 	_associator.set_ogl_model(_ogl_model);
 	_associator.set_calibration(_calibration);
+	_associator.init();
 
 	_spring_attacher.set_width(_width);
 	_spring_attacher.set_height(_height);
-	_spring_attacher.set_association_resource(_association_resource);
-	//_spring_attacher.set_association_resource(_associator.graphics_resource());
+	_spring_attacher.set_association_resource(_associator.graphics_resource());
 	_spring_attacher.set_anchors(_data_dofs);
 	_spring_attacher.set_surface(_surface_dofs, _reference_mesh.getFacets());
 	_spring_attacher.set_visual_model(_visual_model);
-
-	_associator.set_ogl_model(_ogl_model);
-	_associator.set_calibration(_calibration);
-
 }
 
 void TestComponent::bwdInit()
@@ -861,8 +743,11 @@ std::future<bool> TestComponent::read_mesh_async(int frame)
 			std::string mesh_prefix = _surface_prefix.getValue();
 			std::string mesh_postfix = ".stl";
 
+			/*
 			int number = frame * 4;
 			if(frame > 100) number = 800 - number;
+			*/
+			int number = frame;
 
 			std::stringstream mesh_path;
 			mesh_path << mesh_prefix << number << mesh_postfix;
@@ -886,8 +771,11 @@ std::future<bool> TestComponent::read_volume_mesh_async(int frame)
 			std::string mesh_prefix = _volume_prefix.getValue();
 			std::string mesh_postfix = ".vtk";
 
+			/*
 			int number = frame * 4;
 			if(frame > 100) number = 800 - number;
+			*/
+			int number = frame;
 
 			std::stringstream mesh_path;
 			mesh_path << mesh_prefix << number << mesh_postfix;

@@ -1,5 +1,4 @@
 #include "associator.hpp"
-#include "timer.hpp"
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
@@ -8,12 +7,14 @@ void Associator::init()
 	cudapp::Device device = cudapp::default_device();
 	cudapp::GLContext cuda_context(device);
 
+	std::cout << DATA_DIR << std::endl;
+
 	glpp::VertexShader vertex_shader(
-			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.vert");
+			DATA_DIR"/shaders/associate.vert");
 	glpp::GeometryShader geometry_shader(
-			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.geom");
+			DATA_DIR"/shaders/associate.geom");
 	glpp::FragmentShader fragment_shader(
-			"/home/students/haentsch/dev/depthmatch/src/shaders/associate.frag");
+			DATA_DIR"/shaders/associate.frag");
 
 	_program.attach_shader(vertex_shader);
 	_program.attach_shader(geometry_shader);
@@ -54,9 +55,7 @@ void Associator::update(const mediassist::Pose &pose)
 {
 	if(!initialized) init();
 
-	Timer timer;
-
-	if(_ogl_model == nullptr) return; //TODO: throw an approriate exception
+	if(_ogl_model == nullptr) return;
 
 	auto &vertices = _ogl_model->getVertices();
 	auto &normals = _ogl_model->getVnormals();
@@ -66,7 +65,6 @@ void Associator::update(const mediassist::Pose &pose)
 
 	_fbo.bind();
 	glpp::set_viewport(glpp::Viewport(0,0,_calibration.width,_calibration.height));
-
 	_program.use();
 
 	Eigen::Matrix4f world_to_camera = pose.transformation.inverse().matrix();
@@ -87,8 +85,6 @@ void Associator::update(const mediassist::Pose &pose)
 	glpp::disable_stencil_test();
 	glpp::enable_depth_test();
 
-	timer.print(".prepare");
-
 	glpp::enable_client_state(GL_VERTEX_ARRAY);
 	glpp::enable_client_state(GL_NORMAL_ARRAY);
 	glpp::set_vertex_pointer(3, GL_FLOAT, 0, vertices.getData());
@@ -96,15 +92,11 @@ void Associator::update(const mediassist::Pose &pose)
 	glpp::draw_elements(GL_TRIANGLES, triangles.size()*3, GL_UNSIGNED_INT, triangles.getData());
 	glpp::finish();
 
-	timer.print(".render");
-
 	_association_pixel_buffer.back().bind();
 	glpp::read_pixels(GL_COLOR_ATTACHMENT0, 0,0,_calibration.width, _calibration.height,
 			GL_RGBA, GL_FLOAT, 0);
 
 	glpp::finish();
-
-	timer.print(".read pixels");
 
 	glpp::Program::use_default();
 
@@ -115,14 +107,13 @@ void Associator::update(const mediassist::Pose &pose)
 
 	glpp::Framebuffer::bind_default();
 	glpp::set_viewport(viewport);
-
-	timer.print(".done");
 }
 
 
 Association Associator::update(const mediassist::Pose &pose, const mediassist::rgbd_image &image)
 {
 	Association association;
+	//TODO: implement
 	return association;
 }
 

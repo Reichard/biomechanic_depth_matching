@@ -30,12 +30,11 @@ class Associator {
 			return _association_resource;
 		}
 
-		void update(const mediassist::Pose &pose);
-		Association update(const mediassist::Pose &pose, const mediassist::rgbd_image &image);
-
-	private:
 		void init();
 
+		void update(const mediassist::Pose &pose);
+		Association update(const mediassist::Pose &pose, const mediassist::rgbd_image &image);
+	private:
 		OglModel::SPtr _ogl_model;
 		Calibration _calibration;
 		bool initialized = false;
