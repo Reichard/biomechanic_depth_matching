@@ -101,6 +101,7 @@ target_link_libraries(${EXECUTABLE_NAME} SofaBaseVisual )
 target_link_libraries(${EXECUTABLE_NAME} SofaOpenglVisual )
 target_link_libraries(${EXECUTABLE_NAME} SofaImplicitOdeSolver )
 target_link_libraries(${EXECUTABLE_NAME} SofaSimpleFem )
+target_link_libraries(${EXECUTABLE_NAME} ${PROJECT_NAME})
 
 target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES} )
 target_link_libraries(${EXECUTABLE_NAME} ${GLUT_LIBRARIES} )
