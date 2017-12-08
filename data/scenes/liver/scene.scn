@@ -1,0 +1,59 @@
+<?xml version='1.0'?>
+
+<Node dt='0.04' gravity='0 0 0' name='root'>
+	<TestComponent 
+		calibration='../calib/endo.calib' 
+		rgbd_prefix='liver/rgbd/' 
+		polaris_folder='liver/polaris/' 
+		ground_truth_prefix='liver/ground/ground3d' 
+		surface_prefix='liver/surface/press_only_frame_' 
+		volume_prefix='liver/volume/press_only_frame_'
+		max_data_distance='15' 
+		max_spring_stiffness='3000' 
+		pixel_stride='1' 
+		polaris_offset='0' 
+		substeps='16' 
+		/>
+
+	<Node gravity='0 0 0' name='data'>
+		<MechanicalObject name='dofs' template='CudaVec3f'/>
+	</Node>
+
+	<Node gravity='0 0 0' name='liver'>
+		<EulerImplicitSolver name='cg_odesolver'/>
+		<CGLinearSolver iterations='4' name='linear solver' threshold='1e-09' tolerance='1e-09'/>
+
+		<MeshVTKLoader filename='volume/press_only_frame_0.vtk' name='meshLoader'/>
+		<TetrahedronSetTopologyContainer name='topo' src='@meshLoader'/>
+		<MechanicalObject name='dofs' src='@meshLoader' template='CudaVec3f'/>
+		<TetrahedronSetGeometryAlgorithms name='GeomAlgo' template='CudaVec3f'/>
+		<DiagonalMass massDensity='1' name='computed using mass density'/>
+
+		<TetrahedronFEMForceField listening='true' name='FEM' poissonRatio='0.4' template='CudaVec3f' youngModulus='3000'/>
+
+		<Node gravity='0 0 0' name='surface'>
+			<MeshSTLLoader filename='surface/press_only_frame_0.stl' name='surface_mesh_loader'/>
+			<MechanicalObject name='dofs' src='@surface_mesh_loader' template='CudaVec3f'/>
+			<BarycentricMapping input='@../dofs' name='surface_mapping' output='@dofs'/>
+		</Node>
+
+		<Node name='visual'>
+			<Mesh filename='surface/press_only_frame_0.stl' name='surface_mesh'/>
+			<MechanicalObject name='dofs' template='CudaVec3f'/>
+			<CudaVisualModel computeNormals='true' diffuse='0.8 0.1 0.1 1.0' name='cuda' specular='0.5 0.5 0.5 1.0' template='CudaVec3f'/>
+			<BarycentricMapping input='@../dofs' isMechanical='false' name='visual_mapping' output='@dofs'/>
+		</Node>
+
+		<Node gravity='0 0 0' name='visu' tags='Visual'>
+			<OglModel fileMesh='surface/press_only_frame_0.stl' name='VisualModel'/>
+			<BarycentricMapping input='@../dofs' name='visual mapping' output='@VisualModel'/>
+			<OglModel fileMesh='surface/press_only_frame_0.stl' name='reference_model'/>
+		</Node>
+	</Node>
+
+	<MechanicalObject name='rest_spring_anchors' template='CudaVec3f'/>
+	<MutableCudaSpringForceField name='springs' object1='@./data/dofs' object2='@./liver/surface/dofs' template='CudaVec3f'/>
+	<MutableCudaSpringForceField name='rest_springs' object1='@rest_spring_anchors' object2='@./liver/surface/dofs' template='CudaVec3f'/>
+	<MeshVTKLoader filename='volume/press_only_frame_0.vtk' name='vtk_loader'/>
+
+</Node>

@@ -7,18 +7,14 @@ set(EXECUTABLE_NAME run)
 set(HEADER_FILES
     config.h
     test_component.hpp
-    depth_match_component.hpp
 )
 
 set(SOURCE_FILES
     init.cpp
-    depth_match_component.cpp
     test_component.cpp
-    depth_input_component.cpp
     calibration.cpp
 	${CMAKE_SOURCE_DIR}/ext/tinyxml/tinyxml2.cpp
 	mutable_cuda_spring_force_field.cpp
-	mutable_cuda_mechanical_object.cpp
 	spring_attacher.cpp
 	spring_attacher.cu
 	associator.cpp
@@ -71,7 +67,6 @@ link_directories("${SOFA_BUILD_DIR}/lib/")
 link_directories(${glfw_LINK_DIRS})
 
 cuda_add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} OPTIONS ${VERBOSE_PTXAS})
-#set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_PLUGINEXAMPLE")
 
 target_link_libraries(${PROJECT_NAME} SofaComponentGeneral )
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT} )

@@ -4,8 +4,6 @@
 
 void CUDASpringAttacher::attach_springs( std::vector< std::array<float,3> > &data_points)
 {
-	std::cout << data_points.size() << std::endl;
-	std::cout << _width*_height << std::endl;
 	assert(data_points.size() == _width*_height);
 	
 	int data_size_in_bytes = data_points.size()*sizeof(float)*3;

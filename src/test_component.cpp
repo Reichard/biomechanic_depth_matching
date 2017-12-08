@@ -7,7 +7,6 @@
 #include "../../modules/SofaOpenglVisual/OglModel.h"
 
 #include "rgbd_image.hpp"
-#include "timer.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -18,15 +17,15 @@
 #include <cassert>
 #include <chrono>
 
+#include "mesh_loader.hpp"
+
 TestComponent::TestComponent() 
-	: _pixel_skip_count(sofa::core::objectmodel::Base::initData(&_pixel_skip_count,
-			"pixel_skip_count", "use every Nth pixels when attaching springs")),
+	: _pixel_stride(sofa::core::objectmodel::Base::initData(&_pixel_stride,
+			"pixel_stride", "use every Nth pixels when attaching springs")),
 	_max_spring_stiffness(sofa::core::objectmodel::Base::initData(&_max_spring_stiffness,
 			"max_spring_stiffness", "maximum stiffness of our interaction springs")),
 	_max_data_distance(sofa::core::objectmodel::Base::initData(&_max_data_distance,
 			"max_data_distance", "maximum valid data distance")),
-	_stats_file_path(sofa::core::objectmodel::Base::initData(&_stats_file_path,
-			"stats_file", "location of stats file (it is only written if this is not empty)")),
 	_substep_count(sofa::core::objectmodel::Base::initData(&_substep_count,
 			"substeps", "number of substeps per frame")),
 	_volume_prefix(sofa::core::objectmodel::Base::initData(&_volume_prefix,
@@ -41,18 +40,12 @@ TestComponent::TestComponent()
 			"polaris_folder", "location of polaris files")),
 	_polaris_offset(sofa::core::objectmodel::Base::initData(&_polaris_offset,
 			"polaris_offset", "offset of polaris data, relative to start of camera sequence")),
-	_verify_option(sofa::core::objectmodel::Base::initData(&_verify_option,
-			"verify", "enable or disable verification")),
 	_calibration_path(sofa::core::objectmodel::Base::initData(&_calibration_path,
 			"calibration", "path of the camera calibration file")),
 	_reference_mesh(""),
 	_pose_source("")
 {
 	f_listening.setValue(true);
-}
-
-TestComponent::~TestComponent()
-{
 }
 
 void TestComponent::setup_offscreen_rendering()
@@ -95,8 +88,6 @@ void TestComponent::setup_offscreen_rendering()
 
 void TestComponent::draw(const sofa::core::visual::VisualParams *params)
 {
-	Timer timer;
-
 	_visual_params = *params;
 
 	//draw_association();
@@ -104,8 +95,6 @@ void TestComponent::draw(const sofa::core::visual::VisualParams *params)
 	draw_data_positions();
 	//draw_ground_truth();
 	//draw_ground_truth_volume();
-	
-	timer.print("draw");
 }
 
 void TestComponent::draw_association()
@@ -153,7 +142,6 @@ void TestComponent::draw_error()
 	auto &triangles = _ogl_model->getTriangles();
 
 	auto &reference_vertices = _reference_ogl_model->getVertices();
-
 
 	for(size_t i=0; i<vertices.size(); ++i)
 	{
@@ -231,30 +219,15 @@ void TestComponent::read_next_frame()
 	if(_current_frame >= 0) _current_frame += 1;
 	else _current_frame = 0;
 
-	std::cout << "read data for frame " << _current_frame << std::endl;
+	std::cout << "reading data for frame " << _current_frame << "..." << std::endl;
 
 	int input_frame = _current_frame;
-
-	if(_current_frame > 0 && _verify)
-	{
-		_stats.advance();
-		_stats.current().projective_error_surface_to_ground_truth = _projective_deviation;
-		_stats.current().projective_error_depth_to_ground_truth = _projective_stereo_deviation;
-		_stats.current().surface_rmsd = calculate_registration_deviation();
-		_stats.current().avg_surface_distance = calculate_average_registration_deviation();
-		_stats.current().volume_rmsd = calculate_volume_registration_deviation();
-		_stats.current().avg_volume_distance = calculate_average_volume_registration_deviation();
-	}
 
 	if(auto current_pose = _pose_source.read(input_frame + _polaris_offset.getValue()))
 	{
 		_pose = current_pose;
 	} else {
 		std::cout << "NO VALID POSE (frame " << input_frame << ")" << std::endl;
-		if(_verify) {
-			_stats.write(_stats_file_path.getValue());
-			exit(0);
-		}
 	}
 
 	bool points_status = _current_frame > 0 ?
@@ -266,68 +239,19 @@ void TestComponent::read_next_frame()
 	{
 		_data_points = _data_points_read_buffer;
 	}
-
-	if(_verify)
-	{
-		bool mesh_status = _current_frame ? 
-			_mesh_future.get() 
-			: read_mesh_async(input_frame).get();
-		_mesh_future = read_mesh_async(input_frame+1);
-		if(mesh_status)
-		{
-			//we need to do this because they dont clear the triangles when updating the mesh
-			using triangle_list_t = sofa::defaulttype::ResizableExtVector<
-				sofa::core::topology::BaseMeshTopology::Triangle>;
-
-			auto &triangle_list = const_cast<triangle_list_t&>(
-					_reference_ogl_model->getTriangles());
-			triangle_list.clear();
-
-			_reference_ogl_model->setMesh(_reference_mesh);
-			_reference_ogl_model->updateBuffers();
-		}
-
-		bool volume_status = _current_frame ?
-			_volume_future.get()
-			: read_volume_mesh_async(input_frame).get();
-		_volume_future = read_volume_mesh_async(input_frame+1);
-		if(volume_status)
-		{
-			_volume_points = _volume_read_buffer;
-		}
-
-		bool ground_truth_status = _current_frame ? 
-			_ground_truth_future.get() 
-			: read_ground_truth_async(input_frame).get();
-		_ground_truth_future = read_ground_truth_async(input_frame+1);
-		if(ground_truth_status)
-		{
-			_ground_truth = _ground_truth_read_buffer;
-		}
-	}
-
-
 }
 
-void TestComponent::update()
+void TestComponent::update() 
 {
-	static Timer runtimer;
-	runtimer.print("runtime");
-
-	Timer timer;
-
 	unsigned int simulation_substeps = _substep_count.getValue();
 	_simulation_frame++;
-
-	logging::d() << "----------------------------" << std::endl
-	 	<< "Simulation Frame " << _simulation_frame << std::endl;
 
 	if(_simulation_frame % simulation_substeps == 0) 
 	{
 		read_next_frame();
 	}
-
-	timer.print("read frame");
+	std::cout << "frame " << _current_frame
+		<< "/" << (_simulation_frame % simulation_substeps) << std::endl;
 
 	/*
 	   float young_modulus = (_simulation_frame % simulation_substeps + 1) * (4000.0f/simulation_substeps);
@@ -339,180 +263,19 @@ void TestComponent::update()
 
 	_associator.update(_pose);
 
-	timer.print("associate");
-
-	if(_use_gpu)
-		update_springs_on_gpu();
-	else 
-		update_springs();
+	_spring_attacher.set_association_resource(_associator.graphics_resource());
+	_spring_attacher.attach_springs(_data_points); 
 
 	if(_simulation_frame % simulation_substeps == simulation_substeps-1) 
 	{
+		std::cout << "writing outputs..." << std::endl;
 		/*
 		std::stringstream surface_str;
-		surface_str << "/media/haentsch/out/"
+		surface_str << ""
 			<< _current_frame << ".stl";
 		write_surface_stl(surface_str.str());
 		*/
 	}
-
-	timer.print("update springs");
-}
-
-void TestComponent::update_springs_on_gpu()
-{
-
-	_spring_attacher.set_association_resource(_associator.graphics_resource());
-	_spring_attacher.attach_springs(_data_points); 
-}
-
-void TestComponent::update_springs()
-{
-	Timer timer;
-
-	auto &triangles = _ogl_model->getTriangles();
-	auto &vertices = _ogl_model->getVertices();
-	auto &normals = _ogl_model->getVnormals();
-	auto positions = _data_dofs->writePositions();
-	//_springs->clear();
-
-	for(size_t i=0; i<positions.size(); ++i) 
-	{
-		positions[i].set(0,0,0);
-	}
-
-	_projective_deviation = 0;
-	_projective_stereo_deviation = 0;
-	int deviation_sample_count = 0;
-
-	int step = _pixel_skip_count.getValue();
-	float max_data_dist = _max_data_distance.getValue();
-
-	step = std::max(1,step);
-	max_data_dist = std::max(0.0f,max_data_dist);
-
-	timer.print(".prepare");
-
-	//auto springs = _springs->springs.beginEdit();
-	std::vector<SpringForceField::Deriv> forces(vertices.size());
-	std::vector<unsigned int> force_count(vertices.size());
-
-	for(size_t y=0; y<_height; y+=step)
-	{
-		for(size_t x=0; x<_width; x+=step)
-		{
-			auto index = y*_width + x;
-
-			//unpack values from assoc buffer
-			auto bary_0 = _association_buffer[index*4];
-			auto bary_1 = _association_buffer[index*4+1];
-			auto bary_2 = _association_buffer[index*4+2];
-			auto prim_id_f = _association_buffer[index*4+3];
-
-			auto prim_id = static_cast<unsigned int>(prim_id_f);
-
-			if(prim_id_f < 0) continue;
-
-			std::array<unsigned int,3> vertex_ids;
-			for(int i=0; i<3; ++i) vertex_ids[i] = triangles[prim_id][i];
-
-			auto surface_pos = vertices[vertex_ids[0]] * bary_0
-				+ vertices[vertex_ids[1]] * bary_1
-				+ vertices[vertex_ids[2]] * bary_2;
-
-			auto surface_normal = normals[vertex_ids[0]] * bary_0
-				+ normals[vertex_ids[1]] * bary_1
-				+ normals[vertex_ids[2]] * bary_2;
-			surface_normal.normalize();
-
-			decltype(surface_pos) data_pos(
-					_data_points[index][0],
-					_data_points[index][1],
-					_data_points[index][2]);
-
-			if(std::isinf(data_pos[0])) continue;
-
-			auto data_dist = (surface_pos - data_pos).norm();
-
-			if(_verify)
-			{
-				decltype(surface_pos) ground_truth_pos(
-						_ground_truth[index][0],
-						_ground_truth[index][1],
-						_ground_truth[index][2]);
-
-				if(std::isfinite(ground_truth_pos[0])) 
-				{
-					auto dist2 = (surface_pos - ground_truth_pos).norm2();
-					auto stereo_dist2 = (data_pos - ground_truth_pos).norm2();
-
-					_projective_deviation += dist2;
-					_projective_stereo_deviation += stereo_dist2;
-
-					deviation_sample_count++;
-				}
-			}
-
-			if(data_dist > max_data_dist) continue;
-
-			auto data_rel_pos = data_pos - surface_pos;
-			auto projected_length = surface_normal * data_rel_pos;
-			auto projected_pos = surface_pos + surface_normal * projected_length;
-
-			for(int i=0; i<3; ++i)
-			{
-				auto initial_length = (surface_pos - vertices[vertex_ids[i]]).norm();
-				auto direction = projected_pos - vertices[vertex_ids[i]];
-				auto length = direction.norm();
-
-				if(length > 0.0001f)
-				{
-					direction /= length;
-					auto displacement = length - initial_length;
-					auto force = direction * (displacement * displacement);
-
-					positions[vertex_ids[i]] += force;
-					forces[vertex_ids[i]] += force;
-					force_count[vertex_ids[i]]++;
-				}
-			}
-		}
-	}
-
-	timer.print(".accumulate forces");
-
-	for(size_t i=0; i<positions.size(); ++i)
-	{
-		auto force = forces[i];
-		auto count = force_count[i];
-
-		if(count == 0 || force.norm2() < 0.000001f )
-		{
-			positions[i] = vertices[i] + SpringForceField::Deriv(0.0001f,0,0);
-			continue;
-		}
-
-		auto norm = force.norm();
-		auto direction = force / norm;
-		auto scalar_force = norm / count;
-		scalar_force *= 20.0f/(1 + std::exp(20.0f-count));
-
-		auto displacement = 2*std::sqrt(scalar_force);
-		auto displacement_vector = displacement * direction;
-
-		if(displacement_vector.norm2() < 0.000001f) displacement_vector.set(0.0001f,0,0);
-		positions[i] = vertices[i] + displacement_vector;
-	}
-	timer.print(".attach");
-
-	if(deviation_sample_count > 0)
-	{
-		_projective_deviation = std::sqrt(_projective_deviation/deviation_sample_count);
-		_projective_stereo_deviation = std::sqrt(_projective_stereo_deviation/deviation_sample_count);
-	}
-
-	positions.wref().deviceWrite();
-	timer.print(".transfer");
 }
 
 void TestComponent::handleEvent(sofa::core::objectmodel::Event *event)
@@ -521,56 +284,28 @@ void TestComponent::handleEvent(sofa::core::objectmodel::Event *event)
 		update();
 }
 
-void TestComponent::init()
-{
-	if(_use_gpu)
-	{
-		std::string visual_model_path = "liver/visual/cuda";
-		getContext()->get(_visual_model,visual_model_path);
-		if(_visual_model == nullptr) {
-			std::cout << "NO VISUAL MODEL FOUND" << std::endl;
-		}
-
-		//TODO: remove thos two once we render with the cuda visual model
-		std::cout << "init" << std::endl;
-		std::string ogl_model_path = "liver/visu/VisualModel";
-		getContext()->get(_ogl_model,ogl_model_path);
-		if(_ogl_model == nullptr) {
-			std::cout << "NO OPENGL MODEL FOUND" << std::endl;
-		}
-		_ogl_model->setColor(1,1,1,0);
-
-		std::string reference_ogl_model_path = "liver/visu/reference_model";
-		getContext()->get(_reference_ogl_model,reference_ogl_model_path);
-		if(_reference_ogl_model == nullptr) {
-			std::cout << "NO REFERENCE OPENGL MODEL FOUND" << std::endl;
-		}
-		_reference_ogl_model->setColor(1,1,1,0);
-
-	} else {
-		std::string visual_model_path = "liver/visual/cuda";
-		getContext()->get(_visual_model,visual_model_path);
-		if(_visual_model == nullptr) {
-			std::cout << "NO cuda MODEL FOUND" << std::endl;
-		}
-		//_visual_model->setColor(1,1,1,0);
-		
-		std::cout << "init" << std::endl;
-		std::string ogl_model_path = "liver/visu/VisualModel";
-		getContext()->get(_ogl_model,ogl_model_path);
-		if(_ogl_model == nullptr) {
-			std::cout << "NO OPENGL MODEL FOUND" << std::endl;
-		}
-		_ogl_model->setColor(1,1,1,1);
-
-		std::string reference_ogl_model_path = "liver/visu/reference_model";
-		getContext()->get(_reference_ogl_model,reference_ogl_model_path);
-		if(_reference_ogl_model == nullptr) {
-			std::cout << "NO REFERENCE OPENGL MODEL FOUND" << std::endl;
-		}
-		_reference_ogl_model->setColor(1,1,1,0);
-
+void TestComponent::setup_scene() {
+	std::string visual_model_path = "liver/visual/cuda";
+	getContext()->get(_visual_model,visual_model_path);
+	if(_visual_model == nullptr) {
+		std::cout << "NO VISUAL MODEL FOUND" << std::endl;
 	}
+
+	//TODO: remove thos two once we render with the cuda visual model
+	std::cout << "init" << std::endl;
+	std::string ogl_model_path = "liver/visu/VisualModel";
+	getContext()->get(_ogl_model,ogl_model_path);
+	if(_ogl_model == nullptr) {
+		std::cout << "NO OPENGL MODEL FOUND" << std::endl;
+	}
+	_ogl_model->setColor(1,1,1,0);
+
+	std::string reference_ogl_model_path = "liver/visu/reference_model";
+	getContext()->get(_reference_ogl_model,reference_ogl_model_path);
+	if(_reference_ogl_model == nullptr) {
+		std::cout << "NO REFERENCE OPENGL MODEL FOUND" << std::endl;
+	}
+	_reference_ogl_model->setColor(1,1,1,0);
 
 	std::string surface_dofs_path = "liver/surface/dofs";
 	getContext()->get(_surface_dofs,surface_dofs_path);
@@ -603,12 +338,12 @@ void TestComponent::init()
 	}
 
 	/*
-	std::string marker_mapping_path = "liver/markers/mapping";
-	getContext()->get(_marker_mapping,marker_mapping_path);
-	if(_marker_mapping== nullptr) {
-		std::cout << "NO MARKER MAPPING FOUND" << std::endl;
-	}
-	*/
+	   std::string marker_mapping_path = "liver/markers/mapping";
+	   getContext()->get(_marker_mapping,marker_mapping_path);
+	   if(_marker_mapping== nullptr) {
+	   std::cout << "NO MARKER MAPPING FOUND" << std::endl;
+	   }
+	   */
 
 	std::string rest_dofs = "anchors/rest_spring_anchors";
 	getContext()->get(_rest_spring_anchors,rest_dofs);
@@ -640,20 +375,31 @@ void TestComponent::init()
 		std::cout << "NO VTK LOADER FOUND" << std::endl;
 	}
 
-	_verify = _verify_option.getValue();
+
+}
+
+void TestComponent::init()
+{
+	setup_scene();
 
 	using triangle_list_t = sofa::defaulttype::ResizableExtVector<sofa::core::topology::BaseMeshTopology::Triangle>;
 	auto &triangle_list = const_cast<triangle_list_t&>(_reference_ogl_model->getTriangles());
 	triangle_list.clear();
 
-	_calibration.read(_calibration_path.getValue());
+	_calibration.read(DATA_DIR"/scenes/" + _calibration_path.getValue());
 	_width = _calibration.width;
 	_height = _calibration.height;
 	_pixel_count = _width * _height;
 
-	read_mesh_async(0).get();
-	read_volume_mesh_async(0).get();
-	_volume_points = _volume_read_buffer;
+	_surface_mesh_loader.setPrefixAndPostfix(DATA_DIR"/scenes/" +  _surface_prefix.getValue(), ".stl");
+	_reference_mesh = _surface_mesh_loader.load(0);
+
+	_volume_mesh_loader.setPrefixAndPostfix(DATA_DIR"/scenes/" + _volume_prefix.getValue(), ".vtk");
+	_volume_points = _volume_mesh_loader.load(0);
+
+	_ground_truth_loader.setPrefixAndPostfix(DATA_DIR"/scenes/" + _ground_truth_prefix.getValue(), ".txt");
+	_ground_truth_loader.setSize(_width,_height);
+
 	_vertex_count = _reference_mesh.getVertices().size();
 
 	std::cout << "sizes" << std::endl;
@@ -672,32 +418,26 @@ void TestComponent::init()
 	_data_dofs->resize(_vertex_count);
 	_vertex_colors.resize(_vertex_count);
 
-	_stats.substeps = _substep_count.getValue();
-	_stats.pixel_step = _pixel_skip_count.getValue();
-	_stats.max_stiffness = _max_spring_stiffness.getValue();
-	_stats.max_data_dist = _max_data_distance.getValue();
-
-	std::cout << _polaris_folder.getValue() << std::endl;
-	_pose_source.set_path(_polaris_folder.getValue());
+	_pose_source.set_path(DATA_DIR"/scenes/" + _polaris_folder.getValue());
 
 	for(size_t i=0; i<_vertex_count; ++i)
 	{
 		_springs->addSpring(i,i,_max_spring_stiffness.getValue(),100,0);
 	}
 
+	/*
 	auto data_writer = _rest_spring_anchors->write(sofa::core::VecCoordId::position());
 	auto &vertices = *data_writer->beginEdit();
 
-	/*
-	for(size_t i=0; i<vertices.size(); ++i) {
-		vertices[i][0] += 0.0001f;
-		vertices[i][1] += 0.0001f;
-		vertices[i][2] += 0.0001f;
-		_rest_springs->addSpring(i,i,5.0f,100.0f,0);
-	}
-	*/
+	   for(size_t i=0; i<vertices.size(); ++i) {
+	   vertices[i][0] += 0.0001f;
+	   vertices[i][1] += 0.0001f;
+	   vertices[i][2] += 0.0001f;
+	   _rest_springs->addSpring(i,i,5.0f,100.0f,0);
+	   }
 
 	data_writer->endEdit();
+	*/
 
 	_associator.set_ogl_model(_ogl_model);
 	_associator.set_calibration(_calibration);
@@ -711,118 +451,10 @@ void TestComponent::init()
 	_spring_attacher.set_visual_model(_visual_model);
 }
 
-void TestComponent::bwdInit()
-{
-	std::cout << "bwdInit" << std::endl;
-}
-
-/*
-void TestComponent::cleanup()
-{
-	_data_dofs->resize(0);
-	_springs->clear();
-
-	_rest_spring_anchors->resize(0);
-	_rest_springs->clear();
-}
-
-void TestComponent::reset()
-{
-	if(_ground_truth_future.valid()) _ground_truth_future.get();
-	if(_mesh_future.valid()) _mesh_future.get();
-	if(_data_points_future.valid()) _data_points_future.get();
-
-	_simulation_frame = -1;
-	_current_frame = -1;
-}
-*/
-
-std::future<bool> TestComponent::read_mesh_async(int frame)
-{
-	return std::async(std::launch::async,[=]() -> bool {
-			std::string mesh_prefix = _surface_prefix.getValue();
-			std::string mesh_postfix = ".stl";
-
-			/*
-			int number = frame * 4;
-			if(frame > 100) number = 800 - number;
-			*/
-			int number = frame;
-
-			std::stringstream mesh_path;
-			mesh_path << mesh_prefix << number << mesh_postfix;
-			
-			{
-				std::ifstream file(mesh_path.str());
-				if(!file.good()) {
-					std::cout << "no reference mesh available for current frame" << std::endl;
-					return false;
-				}
-			}
-
-			_reference_mesh = sofa::helper::io::MeshSTL(mesh_path.str());
-			return _reference_mesh.getVertices().size() > 0;
-	});
-}
-
-std::future<bool> TestComponent::read_volume_mesh_async(int frame)
-{
-	return std::async(std::launch::async,[=]() -> bool {
-			std::string mesh_prefix = _volume_prefix.getValue();
-			std::string mesh_postfix = ".vtk";
-
-			/*
-			int number = frame * 4;
-			if(frame > 100) number = 800 - number;
-			*/
-			int number = frame;
-
-			std::stringstream mesh_path;
-			mesh_path << mesh_prefix << number << mesh_postfix;
-			{
-				std::ifstream file(mesh_path.str());
-				if(!file.good()) {
-					std::cout << "no volume reference mesh available for current frame" << std::endl;
-					return false;
-				}
-			}
-
-			auto *positions = _vtk_loader->positions.beginEdit();
-			positions->clear();
-			_vtk_loader->positions.endEdit();
-
-			_vtk_loader->setFilename(mesh_path.str());
-			_vtk_loader->load();
-			_vtk_loader->updateMesh();
-
-			const auto &points = _vtk_loader->positions.getValue();
-
-			_volume_read_buffer.resize(points.size());
-			for(size_t i=0; i<points.size(); ++i)
-			{
-				std::array<float,3> point {{
-					static_cast<float>(points[i][0]), 
-					static_cast<float>(points[i][1]), 
-					static_cast<float>(points[i][2])
-				}};
-				_volume_read_buffer[i] = point;
-			}
-
-			return true;
-	});
-}
-
-std::future<bool> TestComponent::read_ground_truth_async(int frame)
-{
-	return std::async(std::launch::async,[=]() -> bool {
-			return read_ground_truth(frame);
-			});
-}
-
 std::future<bool> TestComponent::read_rgbd_data_async(int frame)
 {
 	return std::async(std::launch::async,[=]() -> bool {
-			std::string prefix = _rgbd_prefix.getValue();
+			std::string prefix = DATA_DIR"/scenes/" + _rgbd_prefix.getValue();
 			std::string postfix = ".rgbd";
 
 			std::stringstream path;
@@ -871,58 +503,6 @@ std::future<bool> TestComponent::read_rgbd_data_async(int frame)
 			}
 			return true;
 	});
-}
-
-bool TestComponent::read_ground_truth(int frame)
-{
-	std::string prefix = _ground_truth_prefix.getValue();
-	const std::string postfix = ".txt";
-
-	std::stringstream filename;
-	filename << prefix << std::setw(4) << std::setfill('0') << frame << postfix;
-
-	std::ifstream file(filename.str());
-
-	if(!file.good())
-	{
-		std::cout << "no ground truth available for current frame" << std::endl;
-		std::cout << filename.str() << std::endl;
-		return false;
-	}
-
-	//read and flip the image
-	for(int y=_height-1; y>=0; --y)
-	{
-		for(int x=0; x<_width; ++x)
-		{
-			auto& pos = _ground_truth_read_buffer[y*_width+x];
-
-			if(!file.good()) 
-			{
-				std::cout << "error while reading ground truth! (too few points?)" << std::endl;
-				std::cout << "( x = " << x << " y = " << y << " )" << std::endl;
-				std::cout << "( width = " << _width << " height = " << _height << " )" << std::endl;
-				break;
-			}
-
-			file >> pos[0];
-			file.ignore();
-			file >> pos[1];
-			file.ignore();
-			file >> pos[2];
-			//do we need to flip here???
-
-			if(pos[0] > 1000000)
-			{
-				pos[0] = 1.0f/0.0f;
-				pos[1] = 1.0f/0.0f;
-				pos[2] = 1.0f/0.0f;
-			}
-		}
-		if(!file.good()) break;
-	}
-
-	return true;
 }
 
 float TestComponent::calculate_registration_deviation()
@@ -1131,4 +711,4 @@ float TestComponent::calculate_average_volume_registration_deviation()
 	return mean;
 }
  
-int TestComponentClass = sofa::core::RegisterObject("This component does nothing.").add<TestComponent>();
+int TestComponentClass = sofa::core::RegisterObject("").add<TestComponent>();

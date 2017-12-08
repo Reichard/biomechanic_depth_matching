@@ -11,8 +11,8 @@
 #include "viewer.hpp"
 
 struct DepthMatchConfig {
-	int substeps = 1;
-	float dt = 4.0f;
+	std::string scene_file = "";
+	float dt = 0.04f;
 };
 
 class DepthMatch {
@@ -23,15 +23,11 @@ class DepthMatch {
 				"./src/libDepthMatch.so"
 			};
 			sofa_scene.loadPlugins(plugins);
-			//scene_root = make_scene();
-			//sofa_scene.setScene(&*scene_root);
-			sofa_scene.open(DATA_DIR"/scenes/liver_deform.scn");
+			sofa_scene.open(config.scene_file);
 		}
 
 		void update(const mediassist::rgbd_image &image) {
-			for(int substep=0; substep<config.substeps; ++substep){
-				sofa_scene.step(config.dt);
-			}
+			sofa_scene.step(config.dt);
 		}
 
 		sofa::simplegui::SofaScene &scene() {
@@ -43,8 +39,14 @@ class DepthMatch {
 		sofa::simulation::Node::SPtr scene_root;
 };
 
-int main() {
+int main(int argc, char* argv[]) {
+	if(argc != 2) {
+		std::cout << "Usage: " << argv[0] << " SCENE_FILE" << std::endl;
+		return 1;
+	}
+
 	DepthMatchConfig config; 
+	config.scene_file = argv[1];
 
 	Viewer viewer;
 	DepthMatch tracker(config);
