@@ -1,11 +1,16 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 
 project(depthmatch)
 
 include(ExternalProject)
 
-set(SOFA_DIR "${CMAKE_SOURCE_DIR}/ext/sofa")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+set(SOFA_DIR "${CMAKE_SOURCE_DIR}/ext/sofa/")
 set(SOFA_BUILD_DIR "${CMAKE_BINARY_DIR}/sofa-prefix/src/sofa-build/")
+
 ExternalProject_add(
 	sofa
 	SOURCE_DIR ${SOFA_DIR}
@@ -15,18 +20,18 @@ ExternalProject_add(
 ExternalProject_add(
 	glfw	
 	SOURCE_DIR "${CMAKE_SOURCE_DIR}/ext/glfw"
-	CMAKE_ARGS -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/glfw
+	CMAKE_ARGS -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}
 )
 
-ExternalProject_Add_Step(
-	glfw CopyToBin
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/glfw/bin ${CMAKE_BINARY_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/glfw/lib ${CMAKE_BINARY_DIR}
-  	DEPENDEES install
-)
+#ExternalProject_Add_Step(
+#	glfw CopyToBin
+#	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/bin ${CMAKE_BINARY_DIR}
+#	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/lib ${CMAKE_BINARY_DIR}
+#  	DEPENDEES install
+#)
 
-set(glfw_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/ext/glfw/include")
-set(glfw_LINK_DIRS "${CMAKE_BINARY_DIR}/glfw/lib")
+set(glfw_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/include")
+set(glfw_LINK_DIRS "${CMAKE_BINARY_DIR}/lib")
 set(glfw_LIBRARIES ${CMAKE_SHARED_LIBRARY_PREFIX}glfw${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 add_subdirectory("src")

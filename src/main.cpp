@@ -20,7 +20,7 @@ class DepthMatch {
 		DepthMatch(DepthMatchConfig conf) : config(conf) {
 			std::vector<std::string> plugins = {
 				"./sofa-prefix/src/sofa-build/lib/libSofaCUDA.so",
-				"./src/libDepthMatch.so"
+				"./lib/libDepthMatch.so"
 			};
 			sofa_scene.loadPlugins(plugins);
 			sofa_scene.open(config.scene_file);

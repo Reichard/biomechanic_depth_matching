@@ -30,8 +30,6 @@ namespace sofa
 	namespace component
 	{
 
-		//Here are just several convenient functions to help user to know what contains the plugin
-
 		extern "C" {
 			SOFA_CmakePlugin_API void initExternalModule();
 			SOFA_CmakePlugin_API const char* getModuleName();
@@ -51,12 +49,12 @@ namespace sofa
 
 		const char* getModuleName()
 		{
-			return "DepthMatch";
+			return "Biomechanic Depth Matching";
 		}
 
 		const char* getModuleVersion()
 		{
-			return "0.2";
+			return "0.1";
 		}
 
 		const char* getModuleLicense()
@@ -72,19 +70,12 @@ namespace sofa
 
 		const char* getModuleComponentList()
 		{
-			return "DepthMatchComponent, TestComponent, DepthInputComponent, \
-				MutableCudaSpringForceField, MutableCudaMechanicalObject";
+			return "TestComponent, MutableCudaSpringForceField";
 		}
-
-
 	}
 
 }
 
-//SOFA_LINK_CLASS(TestComponent)
-
 /// Use the SOFA_LINK_CLASS macro for each class, to enable linking on all platforms
-//SOFA_LINK_CLASS(MyMappingPendulumInPlane)
-//SOFA_LINK_CLASS(MyBehaviorModel)
-//SOFA_LINK_CLASS(MyProjectiveConstraintSet)
+//SOFA_LINK_CLASS(...)
 

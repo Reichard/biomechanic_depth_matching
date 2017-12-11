@@ -13,6 +13,7 @@
 		pixel_stride='1' 
 		polaris_offset='0' 
 		substeps='16' 
+		output_path ='out'
 		/>
 
 	<Node gravity='0 0 0' name='data'>

@@ -83,48 +83,9 @@ void accumulate_forces_kernel(float3* data, float4* association_data, float3* an
 	if( x >= width || y >= height) return;
 
 	float3 data_point = data[x+y*width];
-	/*
-	if(!assoc.valid) {
-		bool assoc_found = false;
-		for(int dx=-1; dx<=1; ++dx) {
-			for(int dy=-1; dy <=1; ++dy) {
-				int idx = (x+dx)+(y+dy)*width;
-				assoc_t assoc = unpack_association_data(association_data[pixel_index]);
-	}
-
-
-	}
-	*/
 
 	if(!isfinite(data_point)) return;
 
-	/*
-	float cost = 1;
-	int pixel_index = -1;
-
-	//local search
-	for(int dx=-1; dx<=1; ++dx) {
-		for(int dy=-1; dy <=1; ++dy) {
-			int idx = data[(x+dx)+(y+dy)*width];
-			assoc_t assoc = unpack_association_data(association_data[pixel_index]);
-	}
-
-	if(pixel_index == -1) return;
-	*/
-
-	/*
-	int neighbor_count = 0;
-	for(int dx=-2; dx <=2; ++dx) {
-		for(int dy=-2; dy <=2; ++dy) {
-			int nx = x + dx;
-			int ny = y + dy;
-
-			float l2 = norm2(data[nx + ny * width] - data_point);
-			if(l2 < 0.5f*0.5f) neighbor_count++;
-		}
-	}
-	if(neighbor_count < 5) return;
-	*/
 	assoc_t assoc = unpack_association_data(association_data[x+y*width]);
 
 	if(!assoc.valid) {
@@ -138,8 +99,6 @@ void accumulate_forces_kernel(float3* data, float4* association_data, float3* an
 	}
 
 	if(!assoc.valid) return;
-
-
 
 	uint3 triangle = triangles[assoc.prim];
 
@@ -185,22 +144,7 @@ void attach_kernel(float3* anchors, float3* vertices, float* weights, unsigned i
 	float3 displacement_vector = {0.0001f,0,0};
 
 	if(weight > 0 && isfinite(force)) {
-		//float len = norm(force);
-		//float3 direction = force/len;
-		//float scalar_force = len/count;
-		//scalar_force *= 20.0f/(1 + expf(20.0f-count));
-		//if(scalar_force > 2.0f)scalar_force = 2.0f;
-
 		displacement_vector = force / weight;
-
-		//displacement_vector *= 1.0f - 1.0f/(count/5+1);
-
-		/*
-		if(scalar_force > 0.00001f) {
-			float displacement = 2*sqrtf(scalar_force);
-			displacement_vector = displacement * direction;
-		}
-		*/
 	}
 
 	if(norm2(displacement_vector) < 0.00001f) {
@@ -208,7 +152,6 @@ void attach_kernel(float3* anchors, float3* vertices, float* weights, unsigned i
 		displacement_vector.y = 0;
 		displacement_vector.z = 0;
 	}
-
 	anchor = vertex + displacement_vector;
 }
 
@@ -234,7 +177,6 @@ void attach_gpu_springs(
 	dim3 num_blocks_image = calculate_block_count(image_dim, num_threads_image);
 
 
-	//cudaDeviceSynchronize();
 	clear_kernel<<<num_blocks_vertices,num_threads_vertices>>>(
 			(float3*) anchors,
 			weights,

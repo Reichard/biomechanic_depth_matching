@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
+
 project(DepthMatch)
 
 set(LIBRARY_NAME ${PROJECT_NAME})
@@ -37,9 +38,6 @@ if(GLEW_FOUND)
 	link_libraries(${GLEW_LIBRARIES})
 endif()
 
-# nvcc uses a "host code compiler" to compile CPU code, specified by CUDA_HOST_COMPILER.
-# With some versions of CMake, CUDA_HOST_COMPILER defaults to CMAKE_C_COMPILER,
-# but few host compilers are actually supported. Workarounds should go here.
 if (${CUDA_HOST_COMPILER} MATCHES "ccache$")
     message(STATUS "SofaCUDA: CUDA host compiler was set to ccache, changing to g++")
     set(CUDA_HOST_COMPILER "g++" CACHE STRING "Host side compiler used by NVCC" FORCE)

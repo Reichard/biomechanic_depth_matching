@@ -120,6 +120,7 @@ class TestComponent : public sofa::core::objectmodel::BaseObject
 		Data<std::string> _polaris_folder;
 		Data<unsigned int> _polaris_offset;
 		Data<std::string> _calibration_path;
+		Data<std::string> _output_path;
 
 		bool _use_gpu = true;
 

@@ -42,6 +42,8 @@ TestComponent::TestComponent()
 			"polaris_offset", "offset of polaris data, relative to start of camera sequence")),
 	_calibration_path(sofa::core::objectmodel::Base::initData(&_calibration_path,
 			"calibration", "path of the camera calibration file")),
+	_output_path(sofa::core::objectmodel::Base::initData(&_output_path,
+			"output_path", "path for output files")),
 	_reference_mesh(""),
 	_pose_source("")
 {
@@ -253,14 +255,6 @@ void TestComponent::update()
 	std::cout << "frame " << _current_frame
 		<< "/" << (_simulation_frame % simulation_substeps) << std::endl;
 
-	/*
-	   float young_modulus = (_simulation_frame % simulation_substeps + 1) * (4000.0f/simulation_substeps);
-	   young_modulus += 1000.0f;
-	   _liver_force_field->setYoungModulus(young_modulus);
-	//_liver_force_field->setUpdateStiffnessMatrix(true);
-	_liver_force_field->reinit();
-	*/
-
 	_associator.update(_pose);
 
 	_spring_attacher.set_association_resource(_associator.graphics_resource());
@@ -268,13 +262,11 @@ void TestComponent::update()
 
 	if(_simulation_frame % simulation_substeps == simulation_substeps-1) 
 	{
-		std::cout << "writing outputs..." << std::endl;
-		/*
-		std::stringstream surface_str;
-		surface_str << ""
-			<< _current_frame << ".stl";
-		write_surface_stl(surface_str.str());
-		*/
+		std::string path = _output_path.getValue();
+		if(path.size() > 0) {
+			std::cout << "writing outputs..." << std::endl;
+			write_surface_stl(path + "/" + std::to_string(_current_frame) + ".stl");
+		}
 	}
 }
 
@@ -284,14 +276,14 @@ void TestComponent::handleEvent(sofa::core::objectmodel::Event *event)
 		update();
 }
 
-void TestComponent::setup_scene() {
+void TestComponent::setup_scene() 
+{
 	std::string visual_model_path = "liver/visual/cuda";
 	getContext()->get(_visual_model,visual_model_path);
 	if(_visual_model == nullptr) {
 		std::cout << "NO VISUAL MODEL FOUND" << std::endl;
 	}
 
-	//TODO: remove thos two once we render with the cuda visual model
 	std::cout << "init" << std::endl;
 	std::string ogl_model_path = "liver/visu/VisualModel";
 	getContext()->get(_ogl_model,ogl_model_path);
@@ -638,7 +630,6 @@ void TestComponent::write_marker_stl(const std::string &path)
 		file.write(attribute_count,2);
 	}
 }
-
 
 void TestComponent::write_surface_stl(const std::string &path)
 {
