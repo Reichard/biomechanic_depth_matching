@@ -46,7 +46,7 @@ endif()
 cuda_include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 cuda_include_directories("${SOFA_BUILD_DIR}/include")
 
-add_definitions(-DDATA_DIR="${CMAKE_SOURCE_DIR}/data")
+add_definitions( '-DDATA_DIR="${CMAKE_SOURCE_DIR}/data"' )
 
 include_directories(SYSTEM "${SOFA_DIR}/applications/plugins/")
 include_directories(SYSTEM "${SOFA_DIR}/applications/plugins/SofaCUDA")
@@ -62,7 +62,7 @@ include_directories(SYSTEM "${SOFA_BUILD_DIR}/install/include")
 include_directories(SYSTEM "${glfw_INCLUDE_DIRS}" ) 
 
 link_directories("${SOFA_BUILD_DIR}/lib/")
-link_directories(${glfw_LINK_DIRS})
+link_directories("${glfw_LINK_DIRS}")
 
 cuda_add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} OPTIONS ${VERBOSE_PTXAS})
 
