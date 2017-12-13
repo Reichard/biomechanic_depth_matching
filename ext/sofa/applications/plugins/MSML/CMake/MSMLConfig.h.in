@@ -1,0 +1,4 @@
+#ifndef __CONFIG_H
+#define __CONFIG_H
+#define MEDIASSIST_DATA_PATH "${CMAKE_MEDIASSIST_DATA_PATH}"
+#endif

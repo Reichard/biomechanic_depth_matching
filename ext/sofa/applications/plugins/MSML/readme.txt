@@ -1,0 +1,4 @@
+- enable Sofa-CUDA_Double
+- enable Sofa-Plugin_SOFACUDA
+- manually add cuda sdk : /usr/local/cuda/samples
+- change to cuda-5.0 -> not necessary (symlink)
