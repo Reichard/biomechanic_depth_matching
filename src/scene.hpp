@@ -15,7 +15,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "test_component.hpp"
+#include "component.hpp"
 
 using namespace sofa;
 using sofa::simulation::Node;
@@ -34,7 +34,7 @@ Node::SPtr make_scene()
 	sofa::simulation::getSimulation()->unload(sofa::simulation::getSimulation()->GetRoot());
     auto groot = sofa::simulation::getSimulation()->createNewGraph("root");
 
-	auto test_component = sofa::core::objectmodel::New<TestComponent>();
+	auto test_component = sofa::core::objectmodel::New<BiomechanicalDepthMatching>();
 	groot->addObject(test_component);
 
 	auto data = groot.get()->createChild("data");

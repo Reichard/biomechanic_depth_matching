@@ -7,12 +7,12 @@ set(EXECUTABLE_NAME run)
 
 set(HEADER_FILES
     config.h
-    test_component.hpp
+    component.hpp
 )
 
 set(SOURCE_FILES
     init.cpp
-    test_component.cpp
+    component.cpp
     calibration.cpp
 	${CMAKE_SOURCE_DIR}/ext/tinyxml/tinyxml2.cpp
 	mutable_cuda_spring_force_field.cpp

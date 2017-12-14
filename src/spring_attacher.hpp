@@ -66,11 +66,6 @@ class CUDASpringAttacher
 			_anchors = anchors;
 		}
 
-		void set_ogl_model(OglModel::SPtr ogl_model)
-		{
-			//_ogl_model = ogl_model;
-		}
-
 		void set_visual_model(CudaVisualModel::SPtr visual_model)
 		{
 			_visual_model = visual_model;
@@ -84,24 +79,15 @@ class CUDASpringAttacher
 			_height= height;
 		}
 
-
 	private:
-		void accumulate_forces()
-		{
-		}
-
 		cudapp::GraphicsResource *_association_resource;
 
 		thrust::device_vector<int> _triangles;
 		thrust::device_vector<float> _weights;
 		thrust::device_vector<float> _data_points;
 
-		//TODO: only use these temporarily
-		thrust::device_vector<float> _normals;
-
 		MechanicalState::SPtr _surface;
 		MechanicalState::SPtr _anchors;
-		//OglModel::SPtr _ogl_model;
 		CudaVisualModel::SPtr _visual_model;
 
 		int _renderbuffer_id;

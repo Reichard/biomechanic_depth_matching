@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 
 <Node dt='0.04' gravity='0 0 0' name='root'>
-	<TestComponent 
+	<BiomechanicalDepthMatching
 		calibration='../calib/endo.calib' 
 		rgbd_prefix='liver/rgbd/' 
 		polaris_folder='liver/polaris/' 

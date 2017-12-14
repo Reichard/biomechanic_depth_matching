@@ -70,7 +70,7 @@ namespace sofa
 
 		const char* getModuleComponentList()
 		{
-			return "TestComponent, MutableCudaSpringForceField";
+			return "BiomechanicalDepthMatching, MutableCudaSpringForceField";
 		}
 	}
 
