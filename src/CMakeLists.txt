@@ -28,7 +28,6 @@ set(EXECUTABLE_FILES
 set (CMAKE_CXX_STANDARD 11)
 
 find_package(Threads REQUIRED)
-find_package(CUDA REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 
@@ -73,7 +72,7 @@ target_link_libraries(${PROJECT_NAME} ${MUMPS_LIBRARIES})
 
 target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} "/usr/lib/x86_64-linux-gnu/libcuda.so")
+#target_link_libraries(${PROJECT_NAME} "/usr/lib/x86_64-linux-gnu/libcuda.so")
 
 add_dependencies(${PROJECT_NAME} sofa)
 
@@ -99,6 +98,8 @@ target_link_libraries(${EXECUTABLE_NAME} ${PROJECT_NAME})
 target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_LIBRARIES} )
 target_link_libraries(${EXECUTABLE_NAME} ${GLUT_LIBRARIES} )
 target_link_libraries(${EXECUTABLE_NAME} ${glfw_LIBRARIES} )
+target_link_libraries(${EXECUTABLE_NAME} ${CUDA_LIBRARIES})
+target_link_libraries(${EXECUTABLE_NAME} cuda)
 
 install(TARGETS ${PROJECT_NAME}
 	COMPONENT DepthMatch_libraries

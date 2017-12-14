@@ -57,7 +57,7 @@ class Viewer {
 				std::cerr << "Failed to initialize GLEW." << std::endl;
 			}
 
-			glfwSetWindowSizeCallback(window, [&](GLFWwindow* win, int w, int h){
+			glfwSetWindowSizeCallback(window, [](GLFWwindow* win, int w, int h){
 					glfwMakeContextCurrent(win);
 					glViewport (0, 0, (GLsizei) w, (GLsizei) h);
 
