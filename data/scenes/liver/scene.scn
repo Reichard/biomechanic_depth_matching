@@ -57,4 +57,5 @@
 	<MutableCudaSpringForceField name='springs' object1='@./data/dofs' object2='@./liver/surface/dofs' template='CudaVec3f'/>
 	<MutableCudaSpringForceField name='rest_springs' object1='@rest_spring_anchors' object2='@./liver/surface/dofs' template='CudaVec3f'/>
 	<MeshVTKLoader filename='volume/press_only_frame_0.vtk' name='vtk_loader'/>
+	
 </Node>
