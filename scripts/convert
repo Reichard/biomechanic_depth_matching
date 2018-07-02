@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
-#
+# meter to mm conversion ruby script (vtk file support)
+
 require 'optparse'
 
 unless ARGV.size == 2
